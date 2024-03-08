@@ -8,7 +8,9 @@ Optimus made easy
 </div>
 <br>
 
-# 👁‍🗨 EnvyControl
+# 👁‍🗨 EnvyControl for LunaOS
+
+this fork is used to build EnvyControl customized for [LunaOS](https://gitlab.com/LunaOS/)
 
 EnvyControl is a CLI tool that provides an easy way to switch between GPU modes on Nvidia Optimus systems (i.e laptops with hybrid Intel + Nvidia or AMD + Nvidia graphics configurations) under Linux.
 
@@ -76,9 +78,12 @@ options:
   --dm DISPLAY_MANAGER  Manually specify your Display Manager for Nvidia mode. Available choices: gdm, gdm3, sddm, lightdm
   --force-comp          Enable ForceCompositionPipeline on Nvidia mode
   --coolbits [VALUE]    Enable Coolbits on Nvidia mode. Default if specified: 28
-  --rtd3 [VALUE]        Setup PCI-Express Runtime D3 (RTD3) Power Management on Hybrid mode. Available choices: 0, 1, 2, 3. Default if specified: 2
+  --rtd3 [VALUE]        Setup PCI-Express Runtime D3 (RTD3) Power Management on Hybrid mode. Available choices: 0, 1, 2, 3. Default if specified: 1
   --reset-sddm          Restore default Xsetup file
   --reset               Revert changes made by EnvyControl
+  --cache-create        Create cache used by EnvyControl; only works in hybrid mode
+  --cache-delete        Delete cache created by EnvyControl
+  --cache-query         Show cache created by EnvyControl
   --verbose             Enable verbose mode
 ```
 
@@ -118,6 +123,54 @@ Revert all changes made by EnvyControl:
 
 ```
 sudo envycontrol --reset
+```
+
+### Caching
+The main purpose is to cache the Nvidia PCI bus ID so that a transition from integrated mode directly to nvidia mode is possible.
+
+#### Cache file location
+
+```python
+CACHE_FILE_PATH = '/var/cache/envycontrol/cache.json'
+```
+
+#### File format
+
+```json
+{
+  "nvidia_gpu_pci_bus": "PCI:1:0:0"
+}
+```
+
+The cache is automatically re-created whenever a switch from hybrid mode is performed.
+
+#### Caching command line examples
+
+Create cache used by EnvyControl; only works in hybrid mode
+
+```
+sudo envycontrol --cache-create
+```
+
+When create cache is called when the system is in integrated or nvidia modes
+
+```
+sudo envycontrol --cache-create
+...
+ValueError: --cache-create requires that the system be in the hybrid Optimus mode
+```
+
+
+Delete cache created by EnvyControl
+
+```
+sudo envycontrol --cache-delete
+```
+
+Show cache created by EnvyControl
+
+```
+sudo envycontrol --cache-query
 ```
 
 ## ⬇️ Getting EnvyControl
@@ -174,9 +227,13 @@ The [GPU profile selector](https://github.com/LorenzoMorelli/GPU_profile_selecto
 
 ## 💡 Tips
 
-### Wayland session is missing on Gnome 43+
+### `nvidia` kernel module is named `nvidia-current` on Debian
 
-GDM now requires `NVreg_PreserveVideoMemoryAllocations` kernel parameter which breaks sleep in nvidia and hybrid mode, as well as rtd3 in hybrid mode, so EnvyControl disables it, if you need a Wayland session follow the instructions below
+If you're running into this situation you can use the `--use-nvidia-current` flag to make EnvyControl use the correct module name.
+
+### Wayland session is missing on Gnome
+
+If you need a Wayland session follow the instructions below
 
 ```
 sudo systemctl enable nvidia-{suspend,resume,hibernate}
